@@ -2,8 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+/* App shell */
+:root { --brand:#4f8bff; --accent:#ff7a59; }
+html,body { @apply bg-[#f7f9fc] text-ink; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+a { @apply text-azure-700 hover:text-azure-900; }
 
-html, body { padding: 0; margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#ffffff; }
-* { box-sizing: border-box; }
-a { @apply text-azure-600 hover:text-azure-800; }
+.card { @apply bg-white border border-gray-200 shadow-soft rounded-2xl; }
+.btn { @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm transition; }
+.btn-primary { @apply text-white; background: linear-gradient(90deg,var(--brand),var(--accent)); }
+.btn-ghost { @apply border-gray-300 bg-white hover:bg-azure-50; }
+.badge { @apply text-xs px-2 py-1 rounded-full border; }
+.badge-green { @apply border-green-200 bg-green-50 text-green-800; }
+.badge-red { @apply border-red-200 bg-red-50 text-red-700; }
+.badge-amber { @apply border-amber-200 bg-amber-50 text-amber-800; }
+.table { @apply w-full text-sm; }
+.table thead { @apply text-slate-500 bg-azure-50; }
+.table th { @apply p-3 text-left; }
+.table td { @apply p-3 border-t; }
+.input { @apply w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-azure-300; }
+.select { @apply w-full p-2 border rounded-lg bg-white; }
