@@ -31,6 +31,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           <nav className="space-y-2">
             {item('/', 'Início')}
             {item('/automations', 'Automações')}
+            {item('/audiences', 'Audiências')}
+            {item('/templates', 'Mensagens')}
+            {item('/results', 'Resultados')}
+            {item('/settings', 'Configurações')}
           </nav>
         </aside>
         <main className="col-span-9">{children}</main>
