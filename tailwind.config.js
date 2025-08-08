@@ -1,25 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./pages/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}"
-  ],
+  content: ["./pages/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        azure: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e'
-        },
-        coral: '#ff7a59'
+        azure: {50:"#f1f7ff",100:"#e6f0ff",200:"#c9ddff",300:"#a4c6ff",400:"#7aa9ff",500:"#4f8bff",600:"#2b6bf2",700:"#1e54c7",800:"#1b3f94",900:"#172e6b"},
+        coral: "#ff7a59",
+        ink: "#0f172a",
+        slate: "#64748b"
+      },
+      boxShadow: {
+        soft: "0 2px 8px rgba(17, 24, 39, 0.06)"
+      },
+      borderRadius: {
+        xl: "14px",
+        "2xl": "18px"
       }
     }
   },
