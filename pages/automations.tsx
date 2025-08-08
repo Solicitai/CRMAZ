@@ -1,380 +1,228 @@
-import { useState } from 'react';
-import Layout from '@/components/Layout';
 import Head from 'next/head';
+import Layout from '@/components/Layout';
+import { useState } from 'react';
 
-// Data definitions for wizard
-const triggerOptions = [
-  { id: 'winback60', label: 'Winback 60 dias', description: 'Contata clientes que não compram há 60 dias.' },
-  { id: 'winback90', label: 'Winback 90 dias', description: 'Contata clientes que não compram há 90 dias.' },
-  { id: 'winback120', label: 'Winback 120 dias', description: 'Contata clientes que não compram há 120 dias.' },
-  { id: 'reposicao120', label: 'Reposição 120 dias', description: 'Lembra clientes de renovar após 120 dias.' },
-  { id: 'carrinho', label: 'Carrinho abandonado', description: 'Envia lembretes após abandono de carrinho.' },
-  { id: 'poscompra', label: 'Pós-compra D+7', description: 'Comunica clientes uma semana após a compra.' },
-  { id: 'aniversario', label: 'Aniversário do cliente', description: 'Celebra o aniversário do cliente.' },
-];
-const audienceOptions = [
-  { id: 'risco60_120', label: 'Em risco (60–120 dias sem comprar)', desc: 'Clientes que não compram há 60 a 120 dias.' },
-  { id: 'recem', label: 'Recém-chegados', desc: 'Primeira compra nos últimos 30 dias.' },
-  { id: 'vip', label: 'VIPs', desc: 'Top 10% de clientes por LTV.' },
-  { id: 'hibernando', label: 'Hibernando', desc: 'Sem compras há mais de 180 dias.' },
-  { id: 'todos', label: 'Todos os clientes', desc: 'Inclui todos os clientes ativos.' },
-];
-const templateOptions = [
-  {
-    id: 'winback',
-    name: 'Winback – Oferta 10%',
-    whatsapp: 'Olá {{first_name}}, sentimos sua falta! Use o cupom {{coupon}} para 10% off na sua próxima compra.',
-    emailSubject: 'Sentimos sua falta – 10% off na sua próxima compra!',
-    emailBody: '<p>Olá {{first_name}},<br/> Faz um tempinho desde sua última compra. Queremos te ver de volta! Use o cupom <strong>{{coupon}}</strong> para 10% de desconto. Aproveite!</p>',
-  },
-  {
-    id: 'reposicao',
-    name: 'Reposição – Proteto de Colchão',
-    whatsapp: 'Olá {{first_name}}, seu protetor de colchão precisa ser trocado? Temos uma oferta especial pra você. Confira!',
-    emailSubject: 'Hora de renovar seu protetor!',
-    emailBody: '<p>Olá {{first_name}},<br/> Seu protetor de colchão já tem 120 dias! Que tal renovar com 15% off? Clique aqui para aproveitar.</p>',
-  },
-  {
-    id: 'aniversario',
-    name: 'Aniversário – Parabéns!',
-    whatsapp: 'Feliz aniversário, {{first_name}}! Celebre com 20% off em toda a loja.',
-    emailSubject: 'Parabéns! Ganhe 20% de desconto hoje',
-    emailBody: '<p>Olá {{first_name}},<br/> Que alegria celebrar seu aniversário! Use o cupom <strong>FESTA20</strong> e tenha 20% off em seu pedido de aniversário.</p>',
-  },
+const triggers = [
+  { id: 'winback', label: 'Winback (60/90/120 dias)', explain: 'Todos os dias, encontramos clientes que completam 60, 90 ou 120 dias sem comprar e enviamos WhatsApp/E-mail com oferta.' },
+  { id: 'restock', label: 'Reposição (categoria com ciclo)', explain: 'Quem comprou uma categoria com ciclo (ex.: protetor) e está no período de reposição.' },
+  { id: 'cart', label: 'Carrinho abandonado (1–3 toques)', explain: 'Após abandono de carrinho, 1 a 3 toques para recuperar a compra.' },
+  { id: 'post', label: 'Pós-compra (D+X)', explain: 'Após a compra, mensagens de agradecimento/NPS/cross-sell.' },
 ];
 
-export default function AutomationsPage() {
-  // Step management
+const audiences = [
+  { id: 'risk', label: 'Em risco (60–120d sem comprar)' },
+  { id: 'one', label: 'Comprou apenas 1 vez' },
+  { id: 'vip', label: 'VIP (top 10% LTV)' },
+  { id: 'restock', label: 'Reposição por categoria' },
+  { id: 'cart', label: 'Carrinho abandonado (24h)' },
+];
+
+export default function Automations() {
   const [step, setStep] = useState(1);
-  // Form state
-  const [trigger, setTrigger] = useState(triggerOptions[0].id);
-  const [audience, setAudience] = useState(audienceOptions[0].id);
-  const [dynamicAudience, setDynamicAudience] = useState(true);
-  const [exclusions, setExclusions] = useState('');
-  const [template, setTemplate] = useState(templateOptions[0].id);
-  const [whatsText, setWhatsText] = useState(templateOptions[0].whatsapp);
-  const [emailSubject, setEmailSubject] = useState(templateOptions[0].emailSubject);
-  const [emailBody, setEmailBody] = useState(templateOptions[0].emailBody);
-  const [scheduleHour, setScheduleHour] = useState('09:00');
-  const [frequency, setFrequency] = useState(1);
-  const [statusMessage, setStatusMessage] = useState('');
 
-  // Update template when selected
-  const handleTemplateChange = (id: string) => {
-    const temp = templateOptions.find((t) => t.id === id);
-    if (temp) {
-      setTemplate(id);
-      setWhatsText(temp.whatsapp);
-      setEmailSubject(temp.emailSubject);
-      setEmailBody(temp.emailBody);
-    }
+  // Step 1
+  const [goal, setGoal] = useState('winback');
+  const [name, setName] = useState('Winback 60/90/120');
+  const [active, setActive] = useState('Sim');
+  const [evalFreq, setEvalFreq] = useState('Diária');
+
+  // Step 2
+  const [audType, setAudType] = useState('risk');
+  const [audRefresh, setAudRefresh] = useState('Atualizada automaticamente todos os dias');
+  const [exclude, setExclude] = useState('');
+
+  // Step 3
+  const [waText, setWaText] = useState('Oi {{first_name}}! Sentimos sua falta 😄 Volte com {{coupon}} válido por 72h.');
+  const [waLink, setWaLink] = useState('https://sualoja.com/oferta');
+  const [emSubj, setEmSubj] = useState('Temos um presente pra você, {{first_name}} 🎁');
+  const [emPre, setEmPre] = useState('Cupom {{coupon}} ativo por 72h');
+  const [emBody, setEmBody] = useState('<p>Oi {{first_name}}, sentimos sua falta!</p>');
+  const [emLink, setEmLink] = useState('https://sualoja.com/oferta');
+
+  // Step 4
+  const [windowSend, setWindowSend] = useState('Qualquer horário');
+  const [cap, setCap] = useState('Máx. 2 mensagens/semana por canal');
+  const [touches, setTouches] = useState('3 toques');
+  const [ppl, setPpl] = useState(1200);
+  const [aov, setAov] = useState(180);
+  const [conv, setConv] = useState(7);
+  const [cpc, setCpc] = useState(0.06);
+
+  const revenue = Math.round(ppl * (conv / 100) * aov);
+  const cost = Math.round(ppl * cpc * (goal === 'cart' ? (touches.startsWith('1') ? 1 : touches.startsWith('2') ? 2 : 3) : 1));
+  const roi = (revenue / Math.max(1, cost)).toFixed(1) + '×';
+
+  const explain = triggers.find(t => t.id === goal)?.explain || '';
+
+  const next = () => setStep(s => Math.min(5, s + 1));
+  const prev = () => setStep(s => Math.max(1, s - 1));
+
+  const publish = () => {
+    alert('Automação publicada (mock). O back-end cuidará do público e do envio.');
+    setStep(1);
   };
-
-  // Simulate publish
-  const handlePublish = () => {
-    // In production, send data to API/back-end
-    setStatusMessage('Automação criada com sucesso!');
-    // Reset wizard after short delay
-    setTimeout(() => {
-      setStatusMessage('');
-      setStep(1);
-    }, 4000);
-  };
-
-  // Function to render step content
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">1. Escolha o objetivo</h2>
-            <p className="text-sm text-gray-600">Selecione o tipo de automação que deseja criar.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {triggerOptions.map((opt) => (
-                <label key={opt.id} className={`border rounded-lg p-4 shadow-sm cursor-pointer flex flex-col ${trigger === opt.id ? 'border-azure-400 bg-azure-50' : 'border-gray-200 bg-white'}`}
-                >
-                  <input
-                    type="radio"
-                    name="trigger"
-                    value={opt.id}
-                    checked={trigger === opt.id}
-                    onChange={() => setTrigger(opt.id)}
-                    className="mb-2 h-4 w-4 text-azure-500 focus:ring-azure-400"
-                  />
-                  <span className="font-medium text-sm">{opt.label}</span>
-                  <span className="text-xs text-gray-500 mt-1">{opt.description}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">2. Defina a audiência</h2>
-            <p className="text-sm text-gray-600">Escolha para quem a automação será enviada.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {audienceOptions.map((aud) => (
-                <label key={aud.id} className={`border rounded-lg p-4 shadow-sm cursor-pointer ${audience === aud.id ? 'border-azure-400 bg-azure-50' : 'border-gray-200 bg-white'}`}
-                >
-                  <input
-                    type="radio"
-                    name="audience"
-                    value={aud.id}
-                    checked={audience === aud.id}
-                    onChange={() => setAudience(aud.id)}
-                    className="mb-2 h-4 w-4 text-azure-500 focus:ring-azure-400"
-                  />
-                  <span className="font-medium text-sm">{aud.label}</span>
-                  <span className="text-xs text-gray-500 mt-1">{aud.desc}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex items-center space-x-3">
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={dynamicAudience}
-                  onChange={(e) => setDynamicAudience(e.target.checked)}
-                  className="h-4 w-4 text-azure-500 focus:ring-azure-400"
-                />
-                <span>Atualizar lista diariamente</span>
-              </label>
-              <span className="text-xs text-gray-500">Se desmarcado, usa snapshot atual.</span>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Exclusões (opcional)</label>
-              <input
-                type="text"
-                value={exclusions}
-                onChange={(e) => setExclusions(e.target.value)}
-                placeholder="Clientes VIP, últimos 7 dias, etc."
-                className="mt-1 w-full p-2 border rounded-md focus:border-azure-400 focus:ring-azure-400"
-              />
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">3. Mensagens</h2>
-            <p className="text-sm text-gray-600">Personalize o conteúdo das mensagens.</p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Escolher template</label>
-              <select
-                value={template}
-                onChange={(e) => handleTemplateChange(e.target.value)}
-                className="mt-1 p-2 border w-full rounded-md focus:border-azure-400 focus:ring-azure-400"
-              >
-                {templateOptions.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-            {/* WhatsApp */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Texto WhatsApp</label>
-              <textarea
-                value={whatsText}
-                onChange={(e) => setWhatsText(e.target.value)}
-                className="mt-1 w-full p-2 border rounded-md h-24 focus:border-azure-400 focus:ring-azure-400"
-              />
-              <div className="text-xs text-gray-500 mt-1">Use variáveis: {{first_name}}, {{coupon}}</div>
-              <div className="mt-2 text-sm">
-                <span className="font-semibold">Prévia:</span>{' '}
-                {whatsText
-                  .replace(/{{first_name}}/g, 'Maria')
-                  .replace(/{{coupon}}/g, 'WIN10')}
-              </div>
-            </div>
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Assunto do E-mail</label>
-              <input
-                type="text"
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
-                className="mt-1 w-full p-2 border rounded-md focus:border-azure-400 focus:ring-azure-400"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Corpo do E-mail (HTML simples permitido)</label>
-              <textarea
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-                className="mt-1 w-full p-2 border rounded-md h-32 focus:border-azure-400 focus:ring-azure-400"
-              />
-              <div className="mt-2 text-sm">
-                <span className="font-semibold">Prévia (simplificada):</span>
-                <div className="border p-2 mt-1 rounded-md" dangerouslySetInnerHTML={{ __html: emailBody
-                  .replace(/{{first_name}}/g, 'Maria')
-                  .replace(/{{coupon}}/g, 'WIN10') }} />
-              </div>
-            </div>
-          </div>
-        );
-      case 4:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">4. Agenda & Frequência</h2>
-            <p className="text-sm text-gray-600">Configure quando e com que frequência enviar.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Horário de envio (HH:MM)</label>
-                <input
-                  type="time"
-                  value={scheduleHour}
-                  onChange={(e) => setScheduleHour(e.target.value)}
-                  className="mt-1 p-2 border rounded-md w-full focus:border-azure-400 focus:ring-azure-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Frequência de contatos (toques)</label>
-                <select
-                  value={frequency}
-                  onChange={(e) => setFrequency(parseInt(e.target.value))}
-                  className="mt-1 p-2 border rounded-md w-full focus:border-azure-400 focus:ring-azure-400"
-                >
-                  <option value={1}>1 toque</option>
-                  <option value={2}>2 toques</option>
-                  <option value={3}>3 toques</option>
-                </select>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500">Toques adicionais enviam lembretes 24h e 48h após o primeiro toque.</p>
-          </div>
-        );
-      case 5:
-        // Summary
-        const triggerLabel = triggerOptions.find((t) => t.id === trigger)?.label;
-        const audienceLabel = audienceOptions.find((a) => a.id === audience)?.label;
-        return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">5. Revisar e publicar</h2>
-            <p className="text-sm text-gray-600">Confira as configurações antes de ativar.</p>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-2">
-              <div><strong>Objetivo:</strong> {triggerLabel}</div>
-              <div>
-                <strong>Quem recebe:</strong> {audienceLabel}
-                {' '}
-                {dynamicAudience ? '(lista dinâmica)' : '(snapshot)'}
-                {exclusions && `, exceto ${exclusions}`}
-              </div>
-              <div>
-                <strong>WhatsApp:</strong> {whatsText
-                  .replace(/{{first_name}}/g, 'Maria')
-                  .replace(/{{coupon}}/g, 'WIN10')}
-              </div>
-              <div>
-                <strong>E-mail:</strong> {emailSubject}
-              </div>
-              <div>
-                <strong>Horário:</strong> {scheduleHour}, <strong>Toques:</strong> {frequency}
-              </div>
-            </div>
-            {/* ROI simulation */}
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h3 className="font-medium mb-2">Projeção de ROI</h3>
-              <p className="text-sm text-gray-600">Baseado no tamanho da audiência e ticket médio, a projeção de receita é de <span className="font-semibold text-azure-600">R$ {Math.floor(Math.random()*5000 + 5000)}</span> com ROI de <span className="font-semibold text-azure-600">{(Math.random()*5+2).toFixed(1)}x</span>.</p>
-            </div>
-            {statusMessage && <div className="text-green-600 font-medium">{statusMessage}</div>}
-            <button
-              type="button"
-              onClick={handlePublish}
-              className="mt-2 px-6 py-3 rounded-md bg-azure-500 hover:bg-azure-600 text-white font-medium"
-            >
-              Ativar automação
-            </button>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  // Example existing automations (mock)
-  const existingAutomations = [
-    { id: 1, name: 'Winback 60d', status: 'Ativa', roi: '4.2x', revenue: 'R$ 12.3k' },
-    { id: 2, name: 'Reposição 120d', status: 'Inativa', roi: '3.5x', revenue: 'R$ 6.8k' },
-    { id: 3, name: 'Carrinho – 3 toques', status: 'Ativa', roi: '5.0x', revenue: 'R$ 18.9k' },
-  ];
 
   return (
-    <Layout>
-      <Head>
-        <title>CRM Recompra – Automações</title>
-      </Head>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Automações</h1>
-        {/* Existing automations */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-medium mb-2">Automações existentes</h2>
-          <table className="w-full text-sm">
-            <thead className="text-gray-500">
-              <tr>
-                <th className="py-1 text-left">Nome</th>
-                <th className="py-1 text-left">Status</th>
-                <th className="py-1 text-left">Receita (30d)</th>
-                <th className="py-1 text-left">ROI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {existingAutomations.map((auto) => (
-                <tr key={auto.id} className="border-b last:border-0 text-gray-700">
-                  <td className="py-1 pr-2 whitespace-nowrap">{auto.name}</td>
-                  <td className="py-1 pr-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${auto.status === 'Ativa' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>{auto.status}</span>
-                  </td>
-                    <td className="py-1 pr-2">{auto.revenue}</td>
-                    <td className="py-1 pr-2">{auto.roi}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <>
+      <Head><title>CRM Recompra — Automações</title></Head>
+      <Layout>
+        <div className="flex items-center gap-2 mb-4">
+          {['1. Objetivo','2. Público','3. Mensagens','4. Agenda','5. Revisar'].map((s,i)=>(
+            <div key={s} className={`px-3 py-1 rounded-full border ${step===i+1?'bg-azure-50 border-azure-200 text-azure-800':'bg-white border-gray-200 text-gray-700'}`}>{s}</div>
+          ))}
         </div>
-        {/* Wizard header */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-medium mb-4">Criar nova automação</h2>
-          {/* Step indicator */}
-          <div className="flex justify-between mb-6">
-            {[1,2,3,4,5].map((n) => (
-              <div key={n} className="flex flex-col items-center">
-                <div
-                  className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= n ? 'bg-azure-500 text-white' : 'bg-gray-300 text-gray-600'}`}
-                >
-                  {n}
+
+        {step===1 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold">Objetivo</label>
+              <select value={goal} onChange={e=>setGoal(e.target.value)} className="mt-1 w-full p-2 border rounded-md focus:border-azure-400 focus:ring-azure-400">
+                {triggers.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
+              </select>
+              <label className="block text-sm font-semibold mt-4">Nome da automação</label>
+              <input value={name} onChange={e=>setName(e.target.value)} className="mt-1 w-full p-2 border rounded-md focus:border-azure-400 focus:ring-azure-400" />
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-semibold">Ativar ao publicar?</label>
+                  <select value={active} onChange={e=>setActive(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                    <option>Sim</option><option>Não</option>
+                  </select>
                 </div>
-                <span className={`mt-1 text-xs font-medium ${step >= n ? 'text-azure-600' : 'text-gray-500'}`}>Passo {n}</span>
+                <div>
+                  <label className="block text-sm font-semibold">Frequência de verificação</label>
+                  <select value={evalFreq} onChange={e=>setEvalFreq(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                    <option>Diária</option><option>De hora em hora</option><option>Semanal</option>
+                  </select>
+                </div>
               </div>
-            ))}
-          </div>
-          {/* Step content */}
-          <div className="space-y-4">
-            {renderStep()}
-            {/* Navigation buttons */}
-            <div className="flex justify-between pt-4">
-              {step > 1 && step <= 5 && (
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-md border border-azure-400 text-azure-700 hover:bg-azure-50"
-                  onClick={() => setStep(step - 1)}
-                >
-                  Voltar
-                </button>
-              )}
-              {step < 5 && (
-                <button
-                  type="button"
-                  className="ml-auto px-4 py-2 rounded-md bg-azure-500 hover:bg-azure-600 text-white"
-                  onClick={() => setStep(step + 1)}
-                >
-                  Avançar
-                </button>
-              )}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold">Como funciona</label>
+              <div className="mt-1 p-3 border rounded-md bg-azure-50 border-azure-200 text-azure-900 text-sm">
+                {explain}
+              </div>
             </div>
           </div>
+        )}
+
+        {step===2 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold">Público (sem SQL)</label>
+              <select value={audType} onChange={e=>setAudType(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                {audiences.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+              <label className="block text-sm font-semibold mt-4">Atualização da lista</label>
+              <select value={audRefresh} onChange={e=>setAudRefresh(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                <option>Atualizada automaticamente todos os dias</option>
+                <option>Fixa (snapshot hoje)</option>
+              </select>
+              <label className="block text-sm font-semibold mt-4">Excluir (opcional)</label>
+              <input value={exclude} onChange={e=>setExclude(e.target.value)} placeholder="Ex.: quem comprou nos últimos 7 dias" className="mt-1 w-full p-2 border rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold">Estimativa do público</label>
+              <div className="mt-1 p-3 border rounded-md bg-white text-sm">
+                Público: {Math.floor(800 + Math.random()*2400).toLocaleString('pt-BR')} pessoas<br />
+                Tipo: {audRefresh}<br />
+                Descrição: {audiences.find(a=>a.id===audType)?.label}{exclude ? ` • Exclui: ${exclude}`:''}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step===3 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold">WhatsApp — texto</label>
+              <textarea value={waText} onChange={e=>setWaText(e.target.value)} className="mt-1 w-full p-2 border rounded-md h-24 focus:border-azure-400 focus:ring-azure-400" />
+              <div className="text-xs text-gray-500 mt-1">
+                {'Use variáveis: {{first_name}}, {{coupon}}'}
+              </div>
+              <label className="block text-sm font-semibold mt-3">Link (CTA)</label>
+              <input value={waLink} onChange={e=>setWaLink(e.target.value)} className="mt-1 w-full p-2 border rounded-md" />
+              <div className="mt-2 text-sm">
+                <span className="font-semibold">Prévia:</span>{' '}
+                {waText} {' '}— Link: {waLink}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold">E-mail — assunto</label>
+              <input value={emSubj} onChange={e=>setEmSubj(e.target.value)} className="mt-1 w-full p-2 border rounded-md" />
+              <label className="block text-sm font-semibold mt-3">Preheader</label>
+              <input value={emPre} onChange={e=>setEmPre(e.target.value)} className="mt-1 w-full p-2 border rounded-md" />
+              <label className="block text-sm font-semibold mt-3">Corpo (HTML simples)</label>
+              <textarea value={emBody} onChange={e=>setEmBody(e.target.value)} className="mt-1 w-full p-2 border rounded-md h-24" />
+              <label className="block text-sm font-semibold mt-3">Link (CTA)</label>
+              <input value={emLink} onChange={e=>setEmLink(e.target.value)} className="mt-1 w-full p-2 border rounded-md" />
+              <div className="mt-2 text-sm">
+                <span className="font-semibold">Prévia:</span>{' '}
+                Assunto: {emSubj} • Preheader: {emPre} — Link: {emLink}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step===4 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold">Janela de envio</label>
+              <select value={windowSend} onChange={e=>setWindowSend(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                <option>Qualquer horário</option>
+                <option>Somente horário comercial</option>
+              </select>
+              <label className="block text-sm font-semibold mt-3">Frequência por pessoa</label>
+              <select value={cap} onChange={e=>setCap(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                <option>Máx. 2 mensagens/semana por canal</option>
+                <option>Máx. 1 por semana</option>
+              </select>
+              <label className="block text-sm font-semibold mt-3">Toques (ex.: carrinho)</label>
+              <select value={touches} onChange={e=>setTouches(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
+                <option>1 toques</option>
+                <option>2 toques</option>
+                <option>3 toques</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold">Estimativa</label>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <input type="number" value={ppl} onChange={e=>setPpl(+e.target.value)} className="p-2 border rounded-md" placeholder="Tamanho do público" />
+                <input type="number" value={aov} onChange={e=>setAov(+e.target.value)} className="p-2 border rounded-md" placeholder="Ticket médio" />
+                <input type="number" value={conv} onChange={e=>setConv(+e.target.value)} className="p-2 border rounded-md" placeholder="Conversão (%)" />
+                <input type="number" step="0.01" value={cpc} onChange={e=>setCpc(+e.target.value)} className="p-2 border rounded-md" placeholder="Custo/envio" />
+              </div>
+              <div className="mt-3 text-sm">
+                <span className="px-2 py-1 rounded-full border mr-2">Receita: {revenue.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>
+                <span className="px-2 py-1 rounded-full border mr-2">Custo: {cost.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>
+                <span className="px-2 py-1 rounded-full border">ROI: {roi}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step===5 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="font-semibold mb-2">Resumo</div>
+            <pre className="text-sm bg-azure-50 border border-azure-200 rounded p-3 whitespace-pre-wrap">
+{`Nome: ${name}
+Objetivo: ${triggers.find(t=>t.id===goal)?.label}
+Público: ${audiences.find(a=>a.id===audType)?.label} • ${audRefresh}
+Exclusões: ${exclude || 'nenhuma'}
+Canais: WhatsApp + E-mail
+WhatsApp: ${waText.slice(0,120)}...
+E-mail: Assunto "${emSubj}" • Preheader "${emPre}"
+Agenda: ${windowSend} • ${cap} • ${touches}
+Estimativa: Receita ${revenue.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} • Custo ${cost.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} • ROI ${roi}`}
+            </pre>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 mt-4">
+          {step>1 && <button onClick={prev} className="px-4 py-2 rounded border">Voltar</button>}
+          {step<5 && <button onClick={next} className="px-4 py-2 rounded text-white" style={{background: 'linear-gradient(90deg, #0ea5e9, #ff7a59)'}}>Continuar</button>}
+          {step===5 && <button onClick={publish} className="px-4 py-2 rounded text-white" style={{background: 'linear-gradient(90deg, #0ea5e9, #ff7a59)'}}>Publicar</button>}
         </div>
-      </div>
-    </Layout>
+      </Layout>
+    </>
   );
 }
