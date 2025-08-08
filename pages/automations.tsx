@@ -9,7 +9,7 @@ const triggers = [
   { id: 'post', label: 'Pós-compra (D+X)', explain: 'Após a compra, mensagens de agradecimento/NPS/cross-sell.' },
 ];
 
-const audiences = [
+const audOptions = [
   { id: 'risk', label: 'Em risco (60–120d sem comprar)' },
   { id: 'one', label: 'Comprou apenas 1 vez' },
   { id: 'vip', label: 'VIP (top 10% LTV)' },
@@ -19,27 +19,19 @@ const audiences = [
 
 export default function Automations() {
   const [step, setStep] = useState(1);
-
-  // Step 1
   const [goal, setGoal] = useState('winback');
   const [name, setName] = useState('Winback 60/90/120');
   const [active, setActive] = useState('Sim');
   const [evalFreq, setEvalFreq] = useState('Diária');
-
-  // Step 2
   const [audType, setAudType] = useState('risk');
   const [audRefresh, setAudRefresh] = useState('Atualizada automaticamente todos os dias');
   const [exclude, setExclude] = useState('');
-
-  // Step 3
   const [waText, setWaText] = useState('Oi {{first_name}}! Sentimos sua falta 😄 Volte com {{coupon}} válido por 72h.');
   const [waLink, setWaLink] = useState('https://sualoja.com/oferta');
   const [emSubj, setEmSubj] = useState('Temos um presente pra você, {{first_name}} 🎁');
   const [emPre, setEmPre] = useState('Cupom {{coupon}} ativo por 72h');
   const [emBody, setEmBody] = useState('<p>Oi {{first_name}}, sentimos sua falta!</p>');
   const [emLink, setEmLink] = useState('https://sualoja.com/oferta');
-
-  // Step 4
   const [windowSend, setWindowSend] = useState('Qualquer horário');
   const [cap, setCap] = useState('Máx. 2 mensagens/semana por canal');
   const [touches, setTouches] = useState('3 toques');
@@ -51,16 +43,11 @@ export default function Automations() {
   const revenue = Math.round(ppl * (conv / 100) * aov);
   const cost = Math.round(ppl * cpc * (goal === 'cart' ? (touches.startsWith('1') ? 1 : touches.startsWith('2') ? 2 : 3) : 1));
   const roi = (revenue / Math.max(1, cost)).toFixed(1) + '×';
-
   const explain = triggers.find(t => t.id === goal)?.explain || '';
 
   const next = () => setStep(s => Math.min(5, s + 1));
   const prev = () => setStep(s => Math.max(1, s - 1));
-
-  const publish = () => {
-    alert('Automação publicada (mock). O back-end cuidará do público e do envio.');
-    setStep(1);
-  };
+  const publish = () => { alert('Automação publicada (mock). O back-end cuidará do público e do envio.'); setStep(1); };
 
   return (
     <>
@@ -98,9 +85,7 @@ export default function Automations() {
             </div>
             <div>
               <label className="block text-sm font-semibold">Como funciona</label>
-              <div className="mt-1 p-3 border rounded-md bg-azure-50 border-azure-200 text-azure-900 text-sm">
-                {explain}
-              </div>
+              <div className="mt-1 p-3 border rounded-md bg-azure-50 border-azure-200 text-azure-900 text-sm">{explain}</div>
             </div>
           </div>
         )}
@@ -110,7 +95,7 @@ export default function Automations() {
             <div>
               <label className="block text-sm font-semibold">Público (sem SQL)</label>
               <select value={audType} onChange={e=>setAudType(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
-                {audiences.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}
+                {audOptions.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}
               </select>
               <label className="block text-sm font-semibold mt-4">Atualização da lista</label>
               <select value={audRefresh} onChange={e=>setAudRefresh(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
@@ -125,7 +110,7 @@ export default function Automations() {
               <div className="mt-1 p-3 border rounded-md bg-white text-sm">
                 Público: {Math.floor(800 + Math.random()*2400).toLocaleString('pt-BR')} pessoas<br />
                 Tipo: {audRefresh}<br />
-                Descrição: {audiences.find(a=>a.id===audType)?.label}{exclude ? ` • Exclui: ${exclude}`:''}
+                Descrição: {audOptions.find(a=>a.id===audType)?.label}{exclude ? ` • Exclui: ${exclude}`:''}
               </div>
             </div>
           </div>
@@ -136,15 +121,10 @@ export default function Automations() {
             <div>
               <label className="block text-sm font-semibold">WhatsApp — texto</label>
               <textarea value={waText} onChange={e=>setWaText(e.target.value)} className="mt-1 w-full p-2 border rounded-md h-24 focus:border-azure-400 focus:ring-azure-400" />
-              <div className="text-xs text-gray-500 mt-1">
-                {'Use variáveis: {{first_name}}, {{coupon}}'}
-              </div>
+              <div className="text-xs text-gray-500 mt-1">{'Use variáveis: {{first_name}}, {{coupon}}'}</div>
               <label className="block text-sm font-semibold mt-3">Link (CTA)</label>
               <input value={waLink} onChange={e=>setWaLink(e.target.value)} className="mt-1 w-full p-2 border rounded-md" />
-              <div className="mt-2 text-sm">
-                <span className="font-semibold">Prévia:</span>{' '}
-                {waText} {' '}— Link: {waLink}
-              </div>
+              <div className="mt-2 text-sm"><span className="font-semibold">Prévia:</span>{' '} {waText} {' '}— Link: {waLink}</div>
             </div>
             <div>
               <label className="block text-sm font-semibold">E-mail — assunto</label>
@@ -155,10 +135,7 @@ export default function Automations() {
               <textarea value={emBody} onChange={e=>setEmBody(e.target.value)} className="mt-1 w-full p-2 border rounded-md h-24" />
               <label className="block text-sm font-semibold mt-3">Link (CTA)</label>
               <input value={emLink} onChange={e=>setEmLink(e.target.value)} className="mt-1 w-full p-2 border rounded-md" />
-              <div className="mt-2 text-sm">
-                <span className="font-semibold">Prévia:</span>{' '}
-                Assunto: {emSubj} • Preheader: {emPre} — Link: {emLink}
-              </div>
+              <div className="mt-2 text-sm"><span className="font-semibold">Prévia:</span>{' '} Assunto: {emSubj} • Preheader: {emPre} — Link: {emLink}</div>
             </div>
           </div>
         )}
@@ -168,19 +145,15 @@ export default function Automations() {
             <div>
               <label className="block text-sm font-semibold">Janela de envio</label>
               <select value={windowSend} onChange={e=>setWindowSend(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
-                <option>Qualquer horário</option>
-                <option>Somente horário comercial</option>
+                <option>Qualquer horário</option><option>Somente horário comercial</option>
               </select>
               <label className="block text-sm font-semibold mt-3">Frequência por pessoa</label>
               <select value={cap} onChange={e=>setCap(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
-                <option>Máx. 2 mensagens/semana por canal</option>
-                <option>Máx. 1 por semana</option>
+                <option>Máx. 2 mensagens/semana por canal</option><option>Máx. 1 por semana</option>
               </select>
               <label className="block text-sm font-semibold mt-3">Toques (ex.: carrinho)</label>
               <select value={touches} onChange={e=>setTouches(e.target.value)} className="mt-1 w-full p-2 border rounded-md">
-                <option>1 toques</option>
-                <option>2 toques</option>
-                <option>3 toques</option>
+                <option>1 toques</option><option>2 toques</option><option>3 toques</option>
               </select>
             </div>
             <div>
@@ -206,7 +179,7 @@ export default function Automations() {
             <pre className="text-sm bg-azure-50 border border-azure-200 rounded p-3 whitespace-pre-wrap">
 {`Nome: ${name}
 Objetivo: ${triggers.find(t=>t.id===goal)?.label}
-Público: ${audiences.find(a=>a.id===audType)?.label} • ${audRefresh}
+Público: ${audOptions.find(a=>a.id===audType)?.label} • ${audRefresh}
 Exclusões: ${exclude || 'nenhuma'}
 Canais: WhatsApp + E-mail
 WhatsApp: ${waText.slice(0,120)}...

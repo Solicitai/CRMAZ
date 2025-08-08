@@ -2,25 +2,20 @@ import Head from 'next/head';
 import Layout from '@/components/Layout';
 import KpiCard from '@/components/KpiCard';
 import ChartLine from '@/components/ChartLine';
+import { kpi, lastDays, seriesReceita } from '@/lib/mock';
 
 export default function Home() {
-  const labels = Array.from({ length: 14 }, (_, i) => `D-${13 - i}`);
-  const datasets = [
-    { label: 'Receita', data: labels.map(() => Math.floor(2000 + Math.random() * 8000)) },
-  ];
-
   return (
     <>
       <Head><title>CRM Recompra — Início</title></Head>
       <Layout>
         <div className="grid grid-cols-3 gap-4">
-          <KpiCard title="Automações ativas" value={3} />
-          <KpiCard title="Receita (30d)" value="R$ 37.800" />
-          <KpiCard title="ROI médio (30d)" value="4,2×" />
+          <KpiCard title="Automações ativas" value={kpi.activeAutomations} />
+          <KpiCard title="Receita (30d)" value={kpi.revenue30d.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} />
+          <KpiCard title="ROI médio (30d)" value={`${kpi.roiAvg30d}×`} />
         </div>
-
         <div className="mt-6">
-          <ChartLine title="Receita diária (14d)" labels={labels} datasets={datasets} />
+          <ChartLine title="Receita diária (14d)" labels={lastDays} datasets={seriesReceita} />
         </div>
       </Layout>
     </>
